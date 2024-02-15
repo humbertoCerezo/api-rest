@@ -1,54 +1,65 @@
 from fastapi import FastAPI, HTTPException
-#Librería que importa una "validación" para los modelos
 from pydantic import BaseModel
-#Librería que importa función para que sea opcional un tipo de dato
 from typing import Optional
-#Librería para expresiones regulares
 import re
-#Librería para generación de id's únicos
-from uuid import uuid4
 
-
-#Se crea la aplicación llamada "app"
+#Creación de la APP
 app = FastAPI()
 
-#Expresión regular para el Email
-email_regex = re.compile(r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)")
-
-#Diccionario que simule la creación de usuarios
-users = []
-
-#Aquí se genera un modelo para cuando se use el método POST
-class Libro(BaseModel):
-    titulo: str
-    autor: str
-    paginas: int
-    #Para que sea opcional un tipo de dato se agrega Optional[tipoDeDato]
-    editorial: Optional[str]
-
-
+#Modelo de usuario
 class User(BaseModel):
     id: int
     name: str
     email: str
 
+#Diccionario para guardar datos
+users = []
+
+#Expresión regular para el Email
+email_regex = re.compile(r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)")
+
 @app.get("/")
 def index():
-    return {"message": "Hola"}
-
+    return {"message": "Hola, este es el índice"}
 
 @app.get("/all-users")
-def show_users(user: User):
-    return {User}
+def all_users():
+    return users
 
-# Creación de usuario 
-@app.post("/create-user")
+@app.get("/user-detail/{user_id}")
+def user_detail(user_id: int):
+    for user in users:
+        if user.id == user_id: 
+            return user
+    raise HTTPException(status_code=404, detail="User Not Found")
+
+@app.post("/create-users")
 def create_user(user: User):
     if not email_regex.match(user.email):
-        raise HTTPException(status_code =401, detail=f"Email {user.email} not valid")
+        raise HTTPException(status_code =401, detail=f"The following email:  '{user.email}' is not valid")
     else:
         users.append(user)
-        return users
+        return {"message": "User created succesfuly"}
+    
+@app.delete("/delete-user/{user_id}")
+def delete_user(user_id: int):
+    for index, user in enumerate(users):
+        if user.id == user_id:
+            users.pop(index)
+            return {"message": "User succesfuly deleted"}
+    raise HTTPException(status_code=404, detail="User Not Found")
+
+@app.put("/update-user/{user_id}")
+def update_user(user_id: int, updated_user: User):
+    for index, user in enumerate(users):
+        if user.id == user_id:
+            if not email_regex.match(updated_user.email):
+                raise HTTPException(status_code =401, detail=f"The following email:  '{user.email}' is not valid")
+            else:
+                users[index].name = updated_user.name
+                users[index].email = updated_user.email
+                return {"message": "User succesfuly updated"}
+    raise HTTPException(status_code=404, detail="User Not Found")
 """
 Puntos a calificar - API REST:
 
