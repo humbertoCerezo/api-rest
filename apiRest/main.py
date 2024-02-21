@@ -10,7 +10,7 @@ app = FastAPI()
 class User(BaseModel):
     id: int
     name: str
-    email: str
+    email: EmailStr
 
 
 #Diccionario para guardar datos
