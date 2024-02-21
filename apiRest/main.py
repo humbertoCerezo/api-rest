@@ -1,5 +1,5 @@
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel, ValidationError, EmailStr
+from pydantic import BaseModel
 from typing import Optional
 import re
 
@@ -10,7 +10,7 @@ app = FastAPI()
 class User(BaseModel):
     id: int
     name: str
-    email: EmailStr
+    email: str
 
 
 #Diccionario para guardar datos
@@ -24,6 +24,12 @@ def validate_user_fields(user: User):
     if any(value == "" for value in user.dict().values()):
         raise HTTPException(status_code=400, detail="All fields are required")
 
+#Función para validar si el ID ya existe
+def validate_unique_id(user_id: int):
+    for user in users:
+        if user.id == user_id:
+            raise HTTPException(status_code=400, detail="User with this ID already exists")
+
 
 #Endpoint índice
 @app.get("/")
@@ -31,12 +37,12 @@ def index():
     return {"message": "Hola, este es el índice"}
 
 #Endpoint all users
-@app.get("/all-users")
+@app.get("/users")
 def all_users():
     return users
 
 #Endpoint user detail
-@app.get("/user-detail/{user_id}")
+@app.get("/users/{user_id}")
 def user_detail(user_id: int):
     for user in users:
         if user.id == user_id: 
@@ -44,9 +50,10 @@ def user_detail(user_id: int):
     raise HTTPException(status_code=404, detail="User Not Found")
 
 #Endpoint create user
-@app.post("/create-user")
+@app.post("/users")
 def create_user(user: User):
     validate_user_fields(user)
+    validate_unique_id(user.id)
     # Verifica si el email es válido
     if not email_regex.match(user.email):
         raise HTTPException(status_code=400, detail=f"The following email: '{user.email}' is not valid")
@@ -54,7 +61,7 @@ def create_user(user: User):
     return {"message": "User created successfully"}
 
 #Endpoint delete user
-@app.delete("/delete-user/{user_id}")
+@app.delete("/users/{user_id}")
 def delete_user(user_id: int):
     for index, user in enumerate(users):
         if user.id == user_id:
@@ -63,7 +70,7 @@ def delete_user(user_id: int):
     raise HTTPException(status_code=404, detail="User Not Found")
 
 #Endpoint update user
-@app.put("/update-user/{user_id}")
+@app.put("/users/{user_id}")
 def update_user(user_id: int, updated_user: User):
     validate_user_fields(updated_user)
     for index, user in enumerate(users):
