@@ -8,7 +8,6 @@ app = FastAPI()
 
 #Modelo de usuario
 class User(BaseModel):
-    id: int
     name: str
     email: str
 
@@ -25,23 +24,12 @@ def validate_user_fields(user: User):
         raise HTTPException(status_code=400, detail="All fields are required")
 
 #Función para validar si algún campo ya existe
-def validate_unique_fields(user_id: int, name: str, email: str):
-    for user in users:
-        if user.id == user_id:
-            raise HTTPException(status_code=400, detail="User with this ID already exists")
-        if user.name == name:
-            raise HTTPException(status_code=400, detail="User with this name already exists")
-        if user.email == email:
-            raise HTTPException(status_code=400, detail="User with this email already exists")
-
-#Función para update
-def validate_put_fields(name: str, email: str):
+def validate_unique_fields(name: str, email: str):
     for user in users:
         if user.name == name:
             raise HTTPException(status_code=400, detail="User with this name already exists")
         if user.email == email:
             raise HTTPException(status_code=400, detail="User with this email already exists")
-
 
 #Endpoint índice
 @app.get("/")
@@ -56,8 +44,8 @@ def all_users():
 #Endpoint user detail
 @app.get("/users/{user_id}")
 def user_detail(user_id: int):
-    for user in users:
-        if user.id == user_id: 
+    for index, user in enumerate(users):
+        if index == user_id: 
             return user
     raise HTTPException(status_code=404, detail="User Not Found")
 
@@ -65,7 +53,7 @@ def user_detail(user_id: int):
 @app.post("/users")
 def create_user(user: User):
     validate_user_fields(user)
-    validate_unique_fields(user.id, user.name, user.email)
+    validate_unique_fields(user.name, user.email)
     # Verifica si el email es válido
     if not email_regex.match(user.email):
         raise HTTPException(status_code=400, detail=f"The following email: '{user.email}' is not valid")
@@ -76,7 +64,7 @@ def create_user(user: User):
 @app.delete("/users/{user_id}")
 def delete_user(user_id: int):
     for index, user in enumerate(users):
-        if user.id == user_id:
+        if index == user_id:
             users.pop(index)
             return {"message": "User succesfuly deleted"}
     raise HTTPException(status_code=404, detail="User Not Found")
@@ -85,11 +73,10 @@ def delete_user(user_id: int):
 @app.put("/users/{user_id}")
 def update_user(user_id: int, updated_user: User):
     validate_user_fields(updated_user)
-    validate_put_fields(updated_user.name, updated_user.email)
     for index, user in enumerate(users):
-        if user.id == user_id:
+        if index == user_id:
             if not email_regex.match(updated_user.email):
-                raise HTTPException(status_code =401, detail=f"The following email:  '{updated_user.email}' is not valid")
+                raise HTTPException(status_code =400, detail=f"The following email:  '{updated_user.email}' is not valid")
             else:
                 users[index].name = updated_user.name
                 users[index].email = updated_user.email
