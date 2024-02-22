@@ -24,11 +24,23 @@ def validate_user_fields(user: User):
     if any(value == "" for value in user.dict().values()):
         raise HTTPException(status_code=400, detail="All fields are required")
 
-#Función para validar si el ID ya existe
-def validate_unique_id(user_id: int):
+#Función para validar si algún campo ya existe
+def validate_unique_fields(user_id: int, name: str, email: str):
     for user in users:
         if user.id == user_id:
             raise HTTPException(status_code=400, detail="User with this ID already exists")
+        if user.name == name:
+            raise HTTPException(status_code=400, detail="User with this name already exists")
+        if user.email == email:
+            raise HTTPException(status_code=400, detail="User with this email already exists")
+
+#Función para update
+def validate_put_fields(name: str, email: str):
+    for user in users:
+        if user.name == name:
+            raise HTTPException(status_code=400, detail="User with this name already exists")
+        if user.email == email:
+            raise HTTPException(status_code=400, detail="User with this email already exists")
 
 
 #Endpoint índice
@@ -53,7 +65,7 @@ def user_detail(user_id: int):
 @app.post("/users")
 def create_user(user: User):
     validate_user_fields(user)
-    validate_unique_id(user.id)
+    validate_unique_fields(user.id, user.name, user.email)
     # Verifica si el email es válido
     if not email_regex.match(user.email):
         raise HTTPException(status_code=400, detail=f"The following email: '{user.email}' is not valid")
@@ -73,10 +85,11 @@ def delete_user(user_id: int):
 @app.put("/users/{user_id}")
 def update_user(user_id: int, updated_user: User):
     validate_user_fields(updated_user)
+    validate_put_fields(updated_user.name, updated_user.email)
     for index, user in enumerate(users):
         if user.id == user_id:
             if not email_regex.match(updated_user.email):
-                raise HTTPException(status_code =401, detail=f"The following email:  '{user.email}' is not valid")
+                raise HTTPException(status_code =401, detail=f"The following email:  '{updated_user.email}' is not valid")
             else:
                 users[index].name = updated_user.name
                 users[index].email = updated_user.email
